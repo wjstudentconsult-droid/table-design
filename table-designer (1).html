@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เครื่องมือออกแบบตารางข้อมูล</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&family=Sarabun:wght@400;700&family=Mitr:wght@400;600&family=Prompt:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f3f1ec;--pn:#fff;--tx:#1c1c1c;--mu:#6b6b6b;--ln:#ddd8cf;--ac:#e8590c;--ac2:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--pn:#1c1c1c;--tx:#f0f0f0;--mu:#a0a0a0;--ln:#333;--ac:#ffc400;--ac2:#111}}
+:root[data-theme="dark"]{--bg:#121212;--pn:#1c1c1c;--tx:#f0f0f0;--mu:#a0a0a0;--ln:#333;--ac:#ffc400;--ac2:#111}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Sarabun','Kanit',system-ui,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 14px 60px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+@media(min-width:960px){.wrap{grid-template-columns:minmax(0,1fr) 600px;align-items:start}.out{position:sticky;top:16px}}
+h1{font-family:'Kanit',sans-serif;font-size:26px;margin:0 0 4px}
+.sub{color:var(--mu);margin:0 0 14px}
+.lang{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px}
+.lang button{padding:5px 12px;font-size:14px}
+.lang button.on{background:var(--ac);color:var(--ac2);border-color:var(--ac);font-weight:700}
+.panel{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:16px;margin-bottom:14px}
+.panel h2{font-family:'Kanit',sans-serif;font-size:17px;margin:0 0 10px}
+label{display:block;font-size:14px;color:var(--mu);margin:8px 0 4px}
+input[type=text],select{width:100%;padding:9px 10px;border:1px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button{font:inherit;cursor:pointer;border:1px solid var(--ln);background:var(--pn);color:var(--tx);padding:8px 14px;border-radius:6px}
+button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);color:var(--ac2);border-color:var(--ac);font-weight:700;padding:11px 22px;font-size:17px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.scroll{overflow-x:auto}
+table.ed{border-collapse:collapse;min-width:100%}
+.ed td,.ed th{padding:3px}
+.ed input{min-width:120px;padding:7px 8px;border:1px solid var(--ln);border-radius:5px;background:var(--bg);color:var(--tx);font:inherit;width:100%}
+.ed th input{font-weight:700}
+.x{padding:2px 8px;color:var(--mu)}
+.bgs{display:flex;gap:8px;flex-wrap:wrap}
+.bgs button{width:54px;height:54px;padding:0;border-radius:8px;border:2px solid var(--ln)}
+.bgs button.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)}
+.note{font-size:13px;color:var(--mu)}
+.chk{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--tx);font-size:15px}
+/* output card */
+#card{--ov:rgba(0,0,0,.7);--cbg:transparent;--tc:#fff;--ti:#ffe600;--hb:transparent;--ht:#ccc;--ra:rgba(255,255,255,.06);--rb:rgba(255,255,255,.02);--ak:#ffe600;--ff:'Kanit',sans-serif;--rd:0px;
+position:relative;width:100%;aspect-ratio:auto;min-height:420px;border-radius:12px;overflow:hidden;background-size:cover;background-position:center;font-family:var(--ff);color:var(--tc)}
+#card .ov{position:absolute;inset:0;background:var(--ov)}
+#card .in{position:relative;padding:26px 20px 18px}
+#card h3{margin:0 0 12px;text-align:center;color:var(--ti);font-size:clamp(24px,5.4vw,36px);line-height:1.2;font-weight:800;text-wrap:balance}
+#card table{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:clamp(13px,2.7vw,17px)}
+#card th{background:var(--hb);color:var(--ht);font-weight:400;padding:6px 10px;text-align:left}
+#card td{padding:6px 10px;background:var(--rb);font-weight:600}
+#card tr:nth-child(odd) td{background:var(--ra)}
+#card td:first-child,#card th:first-child{border-radius:var(--rd) 0 0 var(--rd)}
+#card td:last-child,#card th:last-child{border-radius:0 var(--rd) var(--rd) 0}
+#card tr.top td{background:color-mix(in srgb,var(--ak) 28%,transparent)}
+#card .n{text-align:right}
+#card td.k{color:var(--ak);font-weight:800}
+#card td.rk{color:var(--ak);font-weight:800;text-align:center;width:2.6em}
+#card th.rk{text-align:center}
+#card .src{margin-top:10px;font-size:12px;opacity:.75}
+#card .empty{text-align:center;padding:60px 10px;opacity:.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<main>
+<div class="lang" role="group" aria-label="Language"><button type="button" id="lth">ไทย</button><button type="button" id="len">English</button></div>
+<h1>เครื่องมือออกแบบตารางข้อมูล</h1>
+<p class="sub">กรอกข้อมูลหรือแนบไฟล์ Excel แล้วเลือกสไตล์ที่ชอบ</p>
+
+<section class="panel">
+<h2>1. หัวข้อตาราง</h2>
+<input type="text" id="title" placeholder="เช่น เปิด Top 20 ท้องถิ่น จัดเก็บรายได้เองมากที่สุด 2568">
+<label for="src">ที่มาของข้อมูล (ไม่บังคับ)</label>
+<input type="text" id="src" placeholder="เช่น กรมการปกครองส่วนท้องถิ่น">
+</section>
+
+<section class="panel">
+<h2>2. ข้อมูล</h2>
+<div class="scroll"><table class="ed" id="ed"></table></div>
+<div class="row"><button id="addC">+ เพิ่มคอลัมน์</button><button id="addR">+ เพิ่มแถว</button><button id="clr">ล้างข้อมูล</button></div>
+<label for="xl">หรือแนบไฟล์ Excel (.xlsx, .xls, .csv): แถวแรกคือหัวคอลัมน์</label>
+<input type="file" id="xl" accept=".xlsx,.xls,.csv">
+<div class="note" id="xlmsg"></div>
+<div id="shw" hidden><label for="sh">เลือกชีทที่ต้องการใช้</label><select id="sh"></select></div>
+<label class="chk"><input type="checkbox" id="rank" checked> แสดงคอลัมน์ลำดับอัตโนมัติ</label>
+<label class="chk"><input type="checkbox" id="thou" checked> ใส่ตัวคั่นหลักพันในตัวเลข (เช่น 1,182.51)</label>
+<label for="sc">เรียงข้อมูลตามคอลัมน์</label>
+<div class="row" style="margin-top:0"><select id="sc" style="flex:1;min-width:160px"></select><select id="sd" aria-label="ทิศทางการเรียง" style="flex:1;min-width:160px"><option value="d">มากไปน้อย</option><option value="a">น้อยไปมาก</option></select></div>
+</section>
+
+<section class="panel">
+<h2>3. รูปแบบตาราง (30 แบบ)</h2>
+<select id="sty"></select>
+<h2 style="margin-top:16px">4. พื้นหลัง</h2>
+<div class="bgs" id="bgs"></div>
+<label for="bgf">หรืออัพโหลดรูปพื้นหลังของคุณเอง</label>
+<input type="file" id="bgf" accept="image/*">
+</section>
+
+<div class="row">
+<button class="pri" id="go">ประมวลข้อมูล</button>
+<button id="demo">ใส่ข้อมูลตัวอย่าง</button>
+<button id="dl">ดาวน์โหลด PNG</button>
+</div>
+</main>
+
+<aside class="out"><div id="card"><div class="ov"></div><div class="in"><div class="empty">กด “ประมวลข้อมูล” เพื่อดูตัวอย่างตาราง</div></div></div>
+<p class="note">ปุ่ม “ดาวน์โหลด PNG” จะบันทึกตารางเป็นรูปกว้าง 1080 พิกเซล</p></aside>
+</div>
+
+<script>
+var LANG='th';try{LANG=localStorage.getItem('tbl-lang')||(/^en/i.test(navigator.language||'')?'en':'th')}catch(e){}
+var D={'เครื่องมือออกแบบตารางข้อมูล':'Data Table Designer','กรอกข้อมูลหรือแนบไฟล์ Excel แล้วเลือกสไตล์ที่ชอบ':'Enter your data or attach an Excel file, then pick a style.','1. หัวข้อตาราง':'1. Table title','2. ข้อมูล':'2. Data','3. รูปแบบตาราง (30 แบบ)':'3. Table style (30 styles)','4. พื้นหลัง':'4. Background','เช่น เปิด Top 20 ท้องถิ่น จัดเก็บรายได้เองมากที่สุด 2568':'e.g. Top 20 local governments by self-collected revenue 2025','ที่มาของข้อมูล (ไม่บังคับ)':'Data source (optional)','เช่น กรมการปกครองส่วนท้องถิ่น':'e.g. Department of Local Administration','+ เพิ่มคอลัมน์':'+ Add column','+ เพิ่มแถว':'+ Add row','ล้างข้อมูล':'Clear data','หรือแนบไฟล์ Excel (.xlsx, .xls, .csv): แถวแรกคือหัวคอลัมน์':'Or attach an Excel file (.xlsx, .xls, .csv): the first row is the column headers','แสดงคอลัมน์ลำดับอัตโนมัติ':'Show automatic rank column','ใส่ตัวคั่นหลักพันในตัวเลข (เช่น 1,182.51)':'Add thousands separators to numbers (e.g. 1,182.51)','เรียงข้อมูลตามคอลัมน์':'Sort data by column','มากไปน้อย':'High to low','น้อยไปมาก':'Low to high','ทิศทางการเรียง':'Sort direction','เลือกชีทที่ต้องการใช้':'Choose which sheet to use','หรืออัพโหลดรูปพื้นหลังของคุณเอง':'Or upload your own background image','ประมวลข้อมูล':'Process data','ใส่ข้อมูลตัวอย่าง':'Load sample data','ดาวน์โหลด PNG':'Download PNG','กด “ประมวลข้อมูล” เพื่อดูตัวอย่างตาราง':'Press “Process data” to preview the table','ปุ่ม “ดาวน์โหลด PNG” จะบันทึกตารางเป็นรูปความกว้าง 1080 พิกเซล':'The “Download PNG” button saves the table as an image 1080 pixels wide.',
+'หัวคอลัมน์':'Column header','ลบคอลัมน์':'Delete column','ลบแถว':'Delete row','แถว':'Row','คอลัมน์':'Column','ชีท':'Sheet','พื้นหลัง':'Background','อันดับ':'Rank','ที่มา':'Source','ยังไม่มีข้อมูล':'No data yet','ยังไม่มีข้อมูล กรอกข้อมูลหรือกด “ใส่ข้อมูลตัวอย่าง”':'No data yet. Enter data or press “Load sample data”','ไม่เรียง (ตามที่กรอก)':'No sorting (as entered)','รวมทุกชีท (เพิ่มคอลัมน์ชื่อชีท)':'All sheets combined (adds a sheet-name column)','ไม่พบข้อมูลในชีทนี้: ต้องมีหัวคอลัมน์และอย่างน้อย 1 แถว':'No data found in this sheet: it needs a header row and at least 1 data row','อ่านไฟล์ไม่ได้ กรุณาตรวจสอบรูปแบบไฟล์':'Could not read the file. Please check its format.','นำเข้าแล้ว {r} แถว {c} คอลัมน์ จาก {u} ชีท (ใช้หัวคอลัมน์ของชีทแรกที่มีข้อมูล)':'Imported {r} rows, {c} columns from {u} sheets (using the headers of the first sheet with data)','นำเข้าแล้ว {r} แถว {c} คอลัมน์ จากชีท “{n}”':'Imported {r} rows, {c} columns from sheet “{n}”','ดาวน์โหลดไม่สำเร็จ ลองอีกครั้ง':'Download failed. Please try again.',
+'เมืองยามค่ำ':'Night city','ฟ้าคราม':'Deep blue','อาทิตย์อัสดง':'Sunset','เขียวธรรมชาติ':'Nature green','ดำเรียบ':'Plain black',
+'มืดนีออน':'Dark neon','สว่างมินิมอล':'Light minimal','สีสดเต็มพื้น':'Bold solid color','คลาสสิกทางการ':'Classic formal',
+'เหลืองนีออน (Top Ranking)':'Neon yellow (Top Ranking)','ไซเบอร์ฟ้า':'Cyber cyan','ชมพูนีออน':'Neon pink','เขียวเมทริกซ์':'Matrix green','ส้มไฟ':'Fire orange','ม่วงราตรี':'Night purple','ทองหรู':'Luxury gold','แดงเตือน':'Alert red','ขาวสะอาด':'Clean white','เทาอ่อน':'Light gray','มิ้นต์สดชื่น':'Fresh mint','ฟ้าใส':'Clear sky','พีช':'Peach','ลาเวนเดอร์':'Lavender','กระดาษครีม':'Cream paper','กุหลาบ':'Rose','ฟ้าทะเล':'Sea blue','เขียวป่า':'Forest green','ม่วงรอยัล':'Royal purple','แดงอาทิตย์อัสดง':'Sunset red','เขียวน้ำทะเล':'Teal','กรมท่าทอง':'Navy gold','ชมพูร้อนแรง':'Hot pink','สเลต':'Slate','ฟ้าองค์กร':'Corporate blue','เขียวองค์กร':'Corporate green','หนังสือพิมพ์':'Newspaper','แดงเลือดหมู':'Burgundy','ถ่านชาร์โคล':'Charcoal','ขาวดำ':'Black & white'};
+function T(s,p){var r=(LANG==='en'&&D[s]!==undefined)?D[s]:s;if(p)for(var k in p)r=r.replace('{'+k+'}',p[k]);return r}
+var H=['คอลัมน์ 1','คอลัมน์ 2','คอลัมน์ 3'],R=[];
+for(var i=0;i<5;i++)R.push(['','','']);
+
+// ชื่อ, overlay, text, title, head bg, head text, row A, row B, accent, font, radius
+var K="'Kanit',sans-serif",S="'Sarabun',sans-serif",M="'Mitr',sans-serif",P="'Prompt',sans-serif",SF="Georgia,'Sarabun',serif";
+var dk=function(n,ti,ak,f,r){return [n,'rgba(0,0,0,.72)','#fff',ti,'transparent','#bbb','rgba(255,255,255,.07)','rgba(255,255,255,.02)',ak,f||K,r||'0px']};
+var lt=function(n,ov,ti,ak,f){return [n,ov,'#222',ti,'rgba(255,255,255,.55)','#555','rgba(255,255,255,.7)','rgba(255,255,255,.4)',ak,f||S,'8px']};
+var sd=function(n,ov,ti,ak,f){return [n,ov,'#fff',ti,'rgba(0,0,0,.25)','#fff','rgba(255,255,255,.14)','rgba(255,255,255,.06)',ak,f||P,'8px']};
+var cl=function(n,ov,tc,ti,hb,ht,ra,rb,ak,f){return [n,ov,tc,ti,hb,ht,ra,rb,ak,f||S,'0px']};
+var G=[
+['มืดนีออน',[dk('เหลืองนีออน (Top Ranking)','#ffe600','#ffe600'),dk('ไซเบอร์ฟ้า','#00e5ff','#00e5ff'),dk('ชมพูนีออน','#ff3d9a','#ff3d9a',P,'6px'),dk('เขียวเมทริกซ์','#39ff14','#39ff14',K),dk('ส้มไฟ','#ff8a00','#ff8a00',M,'4px'),dk('ม่วงราตรี','#c4a1ff','#c4a1ff',P,'10px'),dk('ทองหรู','#e6c15a','#e6c15a',S),dk('แดงเตือน','#ff4d4d','#ff4d4d',K,'4px')]],
+['สว่างมินิมอล',[lt('ขาวสะอาด','rgba(255,255,255,.8)','#111','#0057ff'),lt('เทาอ่อน','rgba(225,228,232,.85)','#222','#444'),lt('มิ้นต์สดชื่น','rgba(214,245,232,.85)','#0b5d45','#0b8f68',K),lt('ฟ้าใส','rgba(212,234,255,.85)','#0a3d91','#1b6fe0'),lt('พีช','rgba(255,226,208,.87)','#9a3412','#e8590c',M),lt('ลาเวนเดอร์','rgba(233,222,255,.87)','#4c2a9a','#7c4dff',P),lt('กระดาษครีม','rgba(250,243,224,.9)','#5a3e1b','#a0522d',SF),lt('กุหลาบ','rgba(255,222,232,.87)','#9d174d','#e11d63',K)]],
+['สีสดเต็มพื้น',[sd('ฟ้าทะเล','rgba(10,61,145,.88)','#ffd54f','#ffd54f'),sd('เขียวป่า','rgba(16,94,56,.88)','#d9f99d','#d9f99d'),sd('ม่วงรอยัล','rgba(76,29,149,.88)','#fcd34d','#fcd34d'),sd('แดงอาทิตย์อัสดง','rgba(153,27,27,.88)','#fde68a','#fde68a',K),sd('เขียวน้ำทะเล','rgba(13,115,119,.88)','#fff','#a7f3d0'),sd('กรมท่าทอง','rgba(15,30,66,.9)','#f5c542','#f5c542',M),sd('ชมพูร้อนแรง','rgba(190,24,93,.88)','#fff','#fde047',K),sd('สเลต','rgba(51,65,85,.9)','#fff','#7dd3fc')]],
+['คลาสสิกทางการ',[cl('ฟ้าองค์กร','rgba(255,255,255,.93)','#1b2733','#12408a','#12408a','#fff','rgba(18,64,138,.08)','rgba(255,255,255,.6)','#12408a'),cl('เขียวองค์กร','rgba(255,255,255,.93)','#1b2733','#0f6b3e','#0f6b3e','#fff','rgba(15,107,62,.09)','rgba(255,255,255,.6)','#0f6b3e'),cl('หนังสือพิมพ์','rgba(244,238,224,.95)','#222','#111','#222','#f4eee0','rgba(0,0,0,.06)','rgba(0,0,0,.015)','#8b0000',SF),cl('แดงเลือดหมู','rgba(255,250,248,.93)','#2b1515','#7a1424','#7a1424','#fff','rgba(122,20,36,.09)','rgba(255,255,255,.6)','#7a1424',SF),cl('ถ่านชาร์โคล','rgba(38,38,38,.94)','#eee','#fff','#000','#ddd','rgba(255,255,255,.08)','rgba(255,255,255,.03)','#f0b429',K),cl('ขาวดำ','rgba(255,255,255,.96)','#000','#000','#000','#fff','rgba(0,0,0,.07)','rgba(255,255,255,.5)','#000',K)]]
+];
+var ST=[],sel=document.getElementById('sty');
+G.forEach(function(g){g[1].forEach(function(s){ST.push(s)})});
+function buildSel(){var v=sel.value||'0',k=0;sel.innerHTML='';G.forEach(function(g){var og=document.createElement('optgroup');og.label=T(g[0]);g[1].forEach(function(s){var o=document.createElement('option');o.value=k;o.textContent=(++k)+'. '+T(s[0]);og.appendChild(o)});sel.appendChild(og)});sel.value=v}
+buildSel();
+
+var BG=[
+['linear-gradient(160deg,#1a2a44 0%,#0b0b12 45%,#3a2a1a 100%)','เมืองยามค่ำ'],
+['linear-gradient(135deg,#0f2027,#203a43,#2c5364)','ฟ้าคราม'],
+['linear-gradient(160deg,#ff9966,#ff5e62 50%,#3a1c71)','อาทิตย์อัสดง'],
+['linear-gradient(135deg,#134e5e,#71b280)','เขียวธรรมชาติ'],
+['radial-gradient(circle at 30% 20%,#2b2b2b,#050505 70%)','ดำเรียบ']];
+var BC=[['l',160,[[0,'#1a2a44'],[.45,'#0b0b12'],[1,'#3a2a1a']]],['l',135,[[0,'#0f2027'],[.5,'#203a43'],[1,'#2c5364']]],['l',160,[[0,'#ff9966'],[.5,'#ff5e62'],[1,'#3a1c71']]],['l',135,[[0,'#134e5e'],[1,'#71b280']]],['r',.3,.2,[[0,'#2b2b2b'],[.7,'#050505'],[1,'#050505']]]];
+var bgc=BC[0],bgImg=null,bgv=BG[0][0],bgbox=document.getElementById('bgs');
+BG.forEach(function(b,i){var e=document.createElement('button');e.style.background=b[0];e.title=b[1];e.setAttribute('aria-label','พื้นหลัง '+b[1]);if(!i)e.className='on';
+e.onclick=function(){bgv=b[0];bgc=BC[i];bgImg=null;[].forEach.call(bgbox.children,function(c){c.className=''});e.className='on';render()};bgbox.appendChild(e)});
+document.getElementById('bgf').onchange=function(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){bgv='url('+r.result+')';bgImg=new Image();bgImg.src=r.result;[].forEach.call(bgbox.children,function(c){c.className=''});render()};r.readAsDataURL(f)};
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function drawEd(){
+var t='<tr><th></th>';
+H.forEach(function(h,c){t+='<th><input data-h="'+c+'" value="'+esc(h)+'" aria-label="'+T('หัวคอลัมน์')+' '+(c+1)+'">'+'</th>'});
+t+='</tr><tr><td></td>';
+H.forEach(function(h,c){t+='<td>'+(H.length>1?'<button class="x" data-dc="'+c+'" title="'+T('ลบคอลัมน์')+'">'+T('ลบคอลัมน์')+'</button>':'')+'</td>'});
+t+='</tr>';
+R.forEach(function(r,i){t+='<tr><td><button class="x" data-dr="'+i+'" title="'+T('ลบแถว')+'">×</button></td>';
+H.forEach(function(h,c){t+='<td><input data-r="'+i+'" data-c="'+c+'" value="'+esc(r[c])+'" aria-label="'+T('แถว')+' '+(i+1)+' '+T('คอลัมน์')+' '+(c+1)+'"></td>'})
+t+='</tr>'});
+document.getElementById('ed').innerHTML=t;updSort()}
+function updSort(){var s=document.getElementById('sc'),v=s.value||'-1';s.innerHTML='<option value="-1">'+T('ไม่เรียง (ตามที่กรอก)')+'</option>'+H.map(function(h,i){return '<option value="'+i+'">'+esc(h)+'</option>'}).join('');s.value=(+v<H.length)?v:'-1'}
+function pn(v){var n=parseFloat(String(v).replace(/[,\s%฿+]/g,''));return isNaN(n)?null:n}
+function srt(rows){var c=+document.getElementById('sc').value;if(c<0)return rows;var dir=document.getElementById('sd').value==='a'?1:-1;
+return rows.map(function(r,i){return [r,i]}).sort(function(x,y){var u=String(x[0][c]).trim()==='',w=String(y[0][c]).trim()==='';if(u!==w)return u?1:-1;
+var a=pn(x[0][c]),b=pn(y[0][c]);
+if(a!==null&&b!==null){if(a!==b)return (a-b)*dir}
+else if(a!==null)return -1;else if(b!==null)return 1;
+else{var t=String(x[0][c]).localeCompare(String(y[0][c]),'th');if(t)return t*dir}
+return x[1]-y[1]}).map(function(p){return p[0]})}
+var ed=document.getElementById('ed');
+ed.oninput=function(e){var d=e.target.dataset;if(d.h!==undefined){H[d.h]=e.target.value;updSort()}else if(d.r!==undefined)R[d.r][d.c]=e.target.value};
+ed.onclick=function(e){var d=e.target.dataset;
+if(d.dc!==undefined){H.splice(d.dc,1);R.forEach(function(r){r.splice(d.dc,1)});drawEd()}
+else if(d.dr!==undefined){R.splice(d.dr,1);drawEd()}};
+document.getElementById('addC').onclick=function(){H.push(T('คอลัมน์')+' '+(H.length+1));R.forEach(function(r){r.push('')});drawEd()};
+document.getElementById('addR').onclick=function(){R.push(H.map(function(){return ''}));drawEd()};
+document.getElementById('clr').onclick=function(){R.forEach(function(r){for(var i=0;i<r.length;i++)r[i]=''});drawEd()};
+
+document.getElementById('xl').onchange=function(ev){var f=ev.target.files[0],m=document.getElementById('xlmsg');if(!f)return;
+var rd=new FileReader();rd.onload=function(){try{
+var wb=XLSX.read(rd.result,{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+rows=rows.filter(function(r){return r.some(function(v){return String(v).trim()!==''})});
+if(rows.length<2){m.textContent='ไม่พบข้อมูล: ต้องมีหัวคอลัมน์และอย่างน้อย 1 แถว';return}
+var n=Math.max.apply(null,rows.map(function(r){return r.length}));
+H=[];for(var i=0;i<n;i++)H.push(String(rows[0][i]!==undefined&&rows[0][i]!==''?rows[0][i]:'คอลัมน์ '+(i+1)));
+R=rows.slice(1).map(function(r){var o=[];for(var i=0;i<n;i++)o.push(r[i]===undefined?'':String(r[i]));return o});
+drawEd();m.textContent='นำเข้าแล้ว '+R.length+' แถว '+n+' คอลัมน์ จากไฟล์ '+f.name;render()
+}catch(x){m.textContent='อ่านไฟล์ไม่ได้ กรุณาตรวจสอบรูปแบบไฟล์'}};
+rd.readAsArrayBuffer(f)};
+
+document.getElementById('demo').onclick=function(){
+if(LANG==='en'){document.getElementById('title').value='Top 10 Local Governments\nBy Self-Collected Revenue, 2025';document.getElementById('src').value='Department of Local Administration (sample data)';H=['Local authority','Province','Million baht'];R=[['Pattaya City','Chonburi','1,182.51'],['Nonthaburi City','Nonthaburi','652.95'],['Laem Chabang City','Chonburi','644.40'],['Chiang Mai City','Chiang Mai','608.71'],['Chao Phraya Surasak City','Chonburi','605.54'],['Map Ta Phut Town','Rayong','553.93'],['Pak Kret City','Nonthaburi','548.29'],['Tha Khlong Town','Pathum Thani','526.67'],['Phuket City','Phuket','428.75'],['Hat Yai City','Songkhla','395.93']];drawEd();render();return}
+document.getElementById('title').value='เปิด Top 10 ท้องถิ่น\nจัดเก็บรายได้เองมากที่สุด 2568';
+document.getElementById('src').value='กรมการปกครองส่วนท้องถิ่น (ข้อมูลตัวอย่าง)';
+H=['อปท.','จังหวัด','ล้านบาท'];
+R=[['เมืองพัทยา','ชลบุรี','1,182.51'],['ทน.นนทบุรี','นนทบุรี','652.95'],['ทน.แหลมฉบัง','ชลบุรี','644.40'],['ทน.เชียงใหม่','เชียงใหม่','608.71'],['ทน.เจ้าพระยาสุรศักดิ์','ชลบุรี','605.54'],['ทต.มาบตาพุด','ระยอง','553.93'],['ทน.ปากเกร็ด','นนทบุรี','548.29'],['ทม.ท่าโขลง','ปทุมธานี','526.67'],['ทน.ภูเก็ต','ภูเก็ต','428.75'],['ทน.หาดใหญ่','สงขลา','395.93']];
+drawEd();render()};
+
+function render(){RND=1;
+var s=ST[+sel.value],c=document.getElementById('card'),
+v=['ov','tc','ti','hb','ht','ra','rb','ak','ff','rd'];
+s.slice(1).forEach(function(x,i){c.style.setProperty('--'+v[i],x)});
+c.style.backgroundImage=bgv;
+var title=document.getElementById('title').value.trim(),src=document.getElementById('src').value.trim(),rk=document.getElementById('rank').checked;
+var rows=R.filter(function(r){return r.some(function(v){return String(v).trim()!==''})});
+var num=function(v){return /^[\d,.\s%฿+\-]+$/.test(String(v).trim())&&/\d/.test(v)};
+rows=srt(rows);var h='<div class="ov"></div><div class="in">';
+if(title)h+='<h3>'+esc(title).replace(/\n/g,'<br>')+'</h3>';
+if(!rows.length){h+='<div class="empty">'+T('ยังไม่มีข้อมูล กรอกข้อมูลหรือกด “ใส่ข้อมูลตัวอย่าง”')+'</div>'}
+else{
+var last=H.length-1,lastNum=rows.every(function(r){return r[last]===''||num(r[last])});
+h+='<table><thead><tr>'+(rk?'<th class="rk">'+T('อันดับ')+'</th>':'');
+H.forEach(function(x,i){h+='<th'+(i===last&&lastNum&&H.length>1?' class="n"':'')+'>'+esc(x)+'</th>'});
+h+='</tr></thead><tbody>';
+rows.forEach(function(r,i){h+='<tr'+(i===0?' class="top"':'')+'>'+(rk?'<td class="rk">'+(i+1)+'</td>':'');
+H.forEach(function(x,j){var cl=(j===last&&lastNum&&H.length>1)?'n k':(num(r[j])?'n':'');h+='<td'+(cl?' class="'+cl+'"':'')+'>'+esc(fmt(r[j]))+'</td>'});
+h+='</tr>'});
+h+='</tbody></table>'}
+if(src)h+='<div class="src">'+T('ที่มา')+': '+esc(src)+'</div>';
+c.innerHTML=h+'</div>'}
+document.getElementById('go').onclick=render;
+sel.onchange=render;document.getElementById('rank').onchange=render;
+document.getElementById('sc').onchange=document.getElementById('sd').onchange=document.getElementById('thou').onchange=render;
+
+/* ตัวคั่นหลักพัน: ข้ามเลขที่ขึ้นต้นด้วย 0 และจำนวนเต็ม 4 หลักช่วง 1900-2700 (มักเป็นปี) */
+function fmt(v){if(!document.getElementById('thou').checked)return v;var s=String(v).trim();if(!/^-?\d+(\.\d+)?$/.test(s))return v;var p=s.split('.'),neg=s[0]==='-',ip=neg?p[0].slice(1):p[0];if(ip.length>1&&ip[0]==='0')return v;if(p[1]===undefined&&ip.length===4&&+ip>=1900&&+ip<=2700)return v;return (neg?'-':'')+ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+(p[1]!==undefined?'.'+p[1]:'')}
+
+/* นำเข้า Excel หลายชีท (ใช้แทนตัวอ่านเดิมด้านบน) */
+var WBK=null;
+function loadSheet(){var m=document.getElementById('xlmsg'),v=document.getElementById('sh').value,all=v==='all',names=all?WBK.SheetNames:[WBK.SheetNames[+v]],hd=null,n=0,out=[],used=0;
+names.forEach(function(nm){var rows=XLSX.utils.sheet_to_json(WBK.Sheets[nm],{header:1,defval:''}).filter(function(r){return r.some(function(x){return String(x).trim()!==''})});
+if(rows.length<2)return;
+if(!hd){n=Math.max.apply(null,rows.map(function(r){return r.length}));hd=[];for(var i=0;i<n;i++)hd.push(String(rows[0][i]!==undefined&&rows[0][i]!==''?rows[0][i]:T('คอลัมน์')+' '+(i+1)))}
+used++;rows.slice(1).forEach(function(r){var o=[];for(var i=0;i<n;i++)o.push(r[i]===undefined?'':String(r[i]));out.push(all?[nm].concat(o):o)})});
+if(!hd){m.textContent=T('ไม่พบข้อมูลในชีทนี้: ต้องมีหัวคอลัมน์และอย่างน้อย 1 แถว');return}
+H=all?[T('ชีท')].concat(hd):hd;R=out;updSort();drawEd();
+m.textContent=all?T('นำเข้าแล้ว {r} แถว {c} คอลัมน์ จาก {u} ชีท (ใช้หัวคอลัมน์ของชีทแรกที่มีข้อมูล)',{r:R.length,c:H.length,u:used}):T('นำเข้าแล้ว {r} แถว {c} คอลัมน์ จากชีท “{n}”',{r:R.length,c:H.length,n:names[0]});render()}
+document.getElementById('xl').onchange=function(ev){var f=ev.target.files[0],m=document.getElementById('xlmsg');if(!f)return;
+var rd=new FileReader();rd.onload=function(){try{WBK=XLSX.read(rd.result,{type:'array'});var N=WBK.SheetNames;
+document.getElementById('sh').innerHTML=N.map(function(x,i){return '<option value="'+i+'">'+esc(x)+'</option>'}).join('')+(N.length>1?'<option value="all">'+T('รวมทุกชีท (เพิ่มคอลัมน์ชื่อชีท)')+'</option>':'');
+document.getElementById('shw').hidden=N.length<2;loadSheet()}catch(x){m.textContent=T('อ่านไฟล์ไม่ได้ กรุณาตรวจสอบรูปแบบไฟล์')}};
+rd.readAsArrayBuffer(f)};
+document.getElementById('sh').onchange=loadSheet;
+
+/* ภาษา TH/EN */
+var RND=0,INIT='กด “ประมวลข้อมูล” เพื่อดูตัวอย่างตาราง',SKIP='#ed,#card,#sty,#sc,#sh,#xlmsg,script,style';
+function inSkip(n){var e=n.nodeType===1?n:n.parentNode;return !!(e&&e.closest&&e.closest(SKIP))}
+function tr(o){var m=o.match(/^(\s*)([\s\S]*?)(\s*)$/);return m[1]+T(m[2].replace(/\s+/g,' '))+m[3]}
+function applyLang(){
+document.documentElement.lang=LANG;document.title=T('เครื่องมือออกแบบตารางข้อมูล');
+var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),n,L=[];while(n=w.nextNode())L.push(n);
+L.forEach(function(n){if(!n.nodeValue.trim()||inSkip(n))return;if(n._o===undefined)n._o=n.nodeValue;n.nodeValue=tr(n._o)});
+document.querySelectorAll('[placeholder],[aria-label]').forEach(function(e){if(inSkip(e)||e.closest('#bgs')||e.closest('.lang'))return;['placeholder','aria-label'].forEach(function(a){if(e.hasAttribute(a)){if(e['_o'+a]===undefined)e['_o'+a]=e.getAttribute(a);e.setAttribute(a,T(e['_o'+a]))}})});
+[].forEach.call(bgbox.children,function(b,i){b.title=T(BG[i][1]);b.setAttribute('aria-label',T('พื้นหลัง')+' '+T(BG[i][1]))});
+H=H.map(function(h){var m=h.match(/^(?:คอลัมน์|Column) (\d+)$/);return m?T('คอลัมน์')+' '+m[1]:((h==='ชีท'||h==='Sheet')?T('ชีท'):h)});
+buildSel();drawEd();
+var oa=document.querySelector('#sh option[value=all]');if(oa)oa.textContent=T('รวมทุกชีท (เพิ่มคอลัมน์ชื่อชีท)');
+if(RND)render();else{var em=document.querySelector('#card .empty');if(em)em.textContent=T(INIT)}
+['lth','len'].forEach(function(id){document.getElementById(id).className=((id==='len')===(LANG==='en'))?'on':''});
+try{localStorage.setItem('tbl-lang',LANG)}catch(x){}}
+document.getElementById('lth').onclick=function(){LANG='th';applyLang()};
+document.getElementById('len').onclick=function(){LANG='en';applyLang()};
+applyLang();
+
+/* ดาวน์โหลด PNG: วาดลง canvas เอง */
+var dlb=document.getElementById('dl'),DLC=null;
+if(window.claude&&claude.use)claude.use('downloads').then(function(d){if(d){DLC=d;dlb.hidden=false}}).catch(function(){});
+function wrapT(t,m,maxW){var parts;try{parts=Array.from(new Intl.Segmenter('th',{granularity:'word'}).segment(t),function(x){return x.segment})}catch(e){parts=t.split('')}
+var L=[],cur='';parts.forEach(function(p){if(cur&&m.measureText(cur+p).width>maxW){L.push(cur.trim());cur=p}else cur+=p});if(cur.trim())L.push(cur.trim());return L}
+function rr(c,x,y,w,h,r){c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h)}
+function saveFile(o){if(DLC)return DLC.save(o);var a=document.createElement('a');a.href=URL.createObjectURL(o.data);a.download=o.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},4000);return Promise.resolve()}
+dlb.onclick=async function(){
+var s=ST[+sel.value],ov=s[1],tc=s[2],ti=s[3],hb=s[4],ht=s[5],ra=s[6],rb=s[7],ak=s[8],ff=s[9],rd=parseInt(s[10])||0,fam=ff.split(',')[0];
+try{await Promise.all(['400','600','800'].map(function(w){return document.fonts.load(w+' 30px '+fam)}))}catch(e){}
+var title=document.getElementById('title').value.trim(),src=document.getElementById('src').value.trim(),rk=document.getElementById('rank').checked;
+var rows=R.filter(function(r){return r.some(function(v){return String(v).trim()!==''})});
+var num=function(v){return /^[\d,.\s%฿+\-]+$/.test(String(v).trim())&&/\d/.test(v)};
+rows=srt(rows);var W=1080,P=56,IW=W-2*P,m=document.createElement('canvas').getContext('2d');
+var tl=[];if(title){m.font='800 52px '+ff;title.split('\n').forEach(function(t){tl=tl.concat(wrapT(t,m,IW))})}
+var last=H.length-1,lastNum=H.length>1&&rows.every(function(r){return r[last]===''||num(r[last])});
+var hd=(rk?[T('อันดับ')]:[]).concat(H),data=rows.map(function(r,i){return (rk?[String(i+1)]:[]).concat(r.map(function(v){return fmt(v)}))});
+var fs=30,wd,tot;
+for(;;){m.font='600 '+fs+'px '+ff;wd=hd.map(function(h,j){var w=m.measureText(h).width;data.forEach(function(r){w=Math.max(w,m.measureText(r[j]||'').width)});return w+36});
+tot=wd.reduce(function(a,b){return a+b},0);if(tot<=IW||fs<=14)break;fs-=2}
+wd=wd.map(function(w){return w*IW/tot});
+var rh=Math.round(fs*1.9),gap=6,titleH=tl.length?tl.length*66+22:0;
+var HT=P+titleH+(rows.length?(rh+gap)*(rows.length+1):120)+(src?44:0)+P;HT=Math.max(HT,520);
+var cv=document.createElement('canvas');cv.width=W;cv.height=HT;var c=cv.getContext('2d');
+c.fillStyle='#000';c.fillRect(0,0,W,HT);
+if(bgImg&&bgImg.complete&&bgImg.naturalWidth){var k=Math.max(W/bgImg.naturalWidth,HT/bgImg.naturalHeight),iw=bgImg.naturalWidth*k,ih=bgImg.naturalHeight*k;c.drawImage(bgImg,(W-iw)/2,(HT-ih)/2,iw,ih)}
+else{var g;if(bgc[0]==='l'){var a=bgc[1]*Math.PI/180,dx=Math.sin(a),dy=-Math.cos(a),len=Math.abs(W*dx)+Math.abs(HT*dy);g=c.createLinearGradient(W/2-dx*len/2,HT/2-dy*len/2,W/2+dx*len/2,HT/2+dy*len/2)}
+else g=c.createRadialGradient(W*bgc[1],HT*bgc[2],0,W*bgc[1],HT*bgc[2],Math.max(W,HT)*.8);
+bgc[bgc.length-1].forEach(function(p){g.addColorStop(p[0],p[1])});c.fillStyle=g;c.fillRect(0,0,W,HT)}
+c.fillStyle=ov;c.fillRect(0,0,W,HT);
+c.textBaseline='middle';var y=P;
+if(tl.length){c.fillStyle=ti;c.font='800 52px '+ff;c.textAlign='center';tl.forEach(function(t,i){c.fillText(t,W/2,y+33+i*66)});y+=titleH}
+if(!rows.length){c.fillStyle=tc;c.globalAlpha=.7;c.font='400 28px '+ff;c.textAlign='center';c.fillText(T('ยังไม่มีข้อมูล'),W/2,y+50);c.globalAlpha=1}
+else{
+var drawRow=function(cells,yy,bg,hl,isH,i){rr(c,P,yy,IW,rh,rd);c.fillStyle=bg;c.fill();if(hl){c.globalAlpha=.28;c.fillStyle=ak;c.fill();c.globalAlpha=1}
+var x=P;cells.forEach(function(t,j){var ci=j-(rk?1:0),isR=rk&&j===0,isL=lastNum&&ci===last,w=wd[j];
+c.font=(isH?'400 ':(isL||isR?'800 ':'600 '))+fs+'px '+ff;c.fillStyle=isH?ht:((isL||isR)?ak:tc);
+var ra_=isL||(!isH&&!isR&&ci>=0&&num(t)&&false);
+if(isR){c.textAlign='center';c.fillText(t,x+w/2,yy+rh/2)}else if(isL){c.textAlign='right';c.fillText(t,x+w-18,yy+rh/2)}else{c.textAlign=(!isH&&num(t))?'right':'left';c.fillText(t,c.textAlign==='right'?x+w-18:x+18,yy+rh/2)}
+x+=w})};
+drawRow(hd,y,hb,false,true);y+=rh+gap;
+data.forEach(function(r,i){drawRow(r,y,i%2===0?ra:rb,i===0,false,i);y+=rh+gap})}
+if(src){c.font='400 22px '+ff;c.fillStyle=tc;c.globalAlpha=.75;c.textAlign='left';c.fillText(T('ที่มา')+': '+src,P,y+20);c.globalAlpha=1}
+cv.toBlob(async function(b){try{await saveFile({filename:((tl[0]||'table').replace(/[\\/:*?"<>|]/g,'').slice(0,40)||'table')+'.png',data:b})}catch(e){if(e&&e.code!=='declined'){dlb.textContent=T('ดาวน์โหลดไม่สำเร็จ ลองอีกครั้ง')}}},'image/png')}
+drawEd();
+</script>
+</body>
+</html>
